@@ -1,6 +1,6 @@
 package com.example.EcommerceBackend.Repositories;
 
-import com.example.EcommerceBackend.Models.Order_item;
+import com.example.EcommerceBackend.Entities.Order_item;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface Order_itemRepo extends JpaRepository<Order_item, Long> {
