@@ -1,0 +1,7 @@
+package com.example.Ecommercebackend.Repositories;
+
+import com.example.EcommerceBackend.Models.Cart_item;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface Cart_itemRepo extends JpaRepository<Cart_item, Long> {
+}
