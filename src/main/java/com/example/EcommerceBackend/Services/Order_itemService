@@ -1,0 +1,46 @@
+package com.example.EcommerceBackend.Services;
+
+import com.example.EcommerceBackend.Entities.OrderItem;
+import com.example.EcommerceBackend.Repositories.OrderItemRepository;
+
+import lombok.extern.slf4j.Slf4j;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@Slf4j
+@AllArgsConstructor
+public class OrderItemService {
+
+    private final OrderItemRepository orderItemRepository;
+
+    // -------------------- AJOUTER UN ARTICLE À LA COMMANDE --------------------
+    public OrderItem addOrderItem(OrderItem orderItem) {
+        // Sauvegarder un nouvel article dans une commande
+        return orderItemRepository.save(orderItem);
+    }
+
+    // -------------------- OBTENIR LES ARTICLES D'UNE COMMANDE --------------------
+    public List<OrderItem> getOrderItemsByOrder(Long orderId) {
+        // Récupérer tous les articles d'une commande
+        return orderItemRepository.findByOrderId(orderId);
+    }
+
+    // -------------------- METTRE À JOUR UN ARTICLE --------------------
+    public OrderItem updateOrderItem(Long orderId, Long productId, int newQuantity, int newPrice) {
+        // Mettre à jour la quantité et le prix d'un article dans une commande
+        OrderItem item = orderItemRepository.findByOrderIdAndProductId(orderId, productId)
+                .orElseThrow(() -> new IllegalArgumentException("Order item not found"));
+        item.setQuantity(newQuantity);
+        item.setPrice(newPrice);
+        return orderItemRepository.save(item);
+    }
+
+    // -------------------- SUPPRIMER UN ARTICLE --------------------
+    public void removeOrderItem(Long orderId, Long productId) {
+        // Supprimer un article spécifique d'une commande
+        orderItemRepository.deleteByOrderIdAndProductId(orderId, productId);
+    }
+}

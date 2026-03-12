@@ -1,0 +1,81 @@
+package com.example.EcommerceBackend.Services;
+
+import com.example.EcommerceBackend.Entities.Product;
+import com.example.EcommerceBackend.Repositories.ProductRepository;
+
+import lombok.extern.slf4j.Slf4j;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+@Slf4j
+@AllArgsConstructor
+public class ProductService {
+
+    private final ProductRepository productRepository;
+
+    // -------------------- CRUD OPÉRATIONS --------------------
+
+    // Créer un produit
+    public Product createProduct(Product product) {
+        if (productRepository.findBySku(product.getSku()).isPresent()) {
+            throw new IllegalArgumentException("SKU already exists!");
+        }
+        log.info("Creating product {}", product.getTitle());
+        return productRepository.save(product);
+    }
+
+    // Lire tous les produits
+    public List<Product> getAllProducts() {
+        return productRepository.findAll();
+    }
+
+    // Lire un produit par ID
+    public Optional<Product> getProductById(Long id) {
+        return productRepository.findById(id);
+    }
+
+    // Mettre à jour un produit
+    public Product updateProduct(Long id, Product updatedProduct) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Product not found"));
+
+        product.setTitle(updatedProduct.getTitle());
+        product.setDescription(updatedProduct.getDescription());
+        product.setPrice(updatedProduct.getPrice());
+        product.setCategory(updatedProduct.getCategory());
+        product.setThumbnail(updatedProduct.getThumbnail());
+        product.setStock(updatedProduct.getStock());
+
+        log.info("Updating product {}", product.getTitle());
+        return productRepository.save(product);
+    }
+
+    // Supprimer un produit
+    public void deleteProduct(Long id) {
+        if (!productRepository.existsById(id)) {
+            throw new IllegalArgumentException("Product not found");
+        }
+        log.info("Deleting product with id {}", id);
+        productRepository.deleteById(id);
+    }
+
+    // -------------------- Logique MÉTIER  --------------------
+
+    // Mettre à jour le stock après une commande
+    public void updateStock(Long productId, int quantityOrdered) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("Product not found"));
+
+        if (product.getStock() < quantityOrdered) {
+            throw new IllegalArgumentException("Insufficient stock for product " + product.getTitle());
+        }
+
+        product.setStock(product.getStock() - quantityOrdered);
+        productRepository.save(product);
+        log.info("Stock updated for product {}: new stock = {}", product.getTitle(), product.getStock());
+    }
+}

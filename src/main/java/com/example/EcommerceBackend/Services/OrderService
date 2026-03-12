@@ -1,0 +1,80 @@
+package com.example.EcommerceBackend.Services;
+
+import com.example.EcommerceBackend.Entities.Order;
+import com.example.EcommerceBackend.Entities.OrderItem;
+import com.example.EcommerceBackend.Entities.Cart;
+import com.example.EcommerceBackend.Entities.CartItem;
+import com.example.EcommerceBackend.Repositories.OrderRepository;
+import com.example.EcommerceBackend.Repositories.OrderItemRepository;
+import com.example.EcommerceBackend.Repositories.CartRepository;
+import com.example.EcommerceBackend.Repositories.CartItemRepository;
+
+import lombok.extern.slf4j.Slf4j;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@Slf4j
+@AllArgsConstructor
+public class OrderService {
+
+    private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
+
+    // -------------------- CRÉER UNE COMMANDE --------------------
+    public Order placeOrder(Long userId) {
+        // Récupérer le panier de l'utilisateur
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
+
+        // Créer une nouvelle commande
+        Order order = new Order(userId);
+        orderRepository.save(order);
+
+        // Copier les articles du panier vers la commande
+        List<CartItem> cartItems = cartItemRepository.findByCartId(cart.getId());
+        for (CartItem cartItem : cartItems) {
+            OrderItem orderItem = new OrderItem(
+                    order.getId(),
+                    cartItem.getProductId(),
+                    cartItem.getQuantity(),
+                    cartItem.getProduct().getPrice()
+            );
+            orderItemRepository.save(orderItem);
+        }
+
+        // Vider le panier après la commande
+        cartItemRepository.deleteAll(cartItems);
+        cart.clear();
+        cartRepository.save(cart);
+
+        log.info("Order created successfully for user {}", userId);
+        return order;
+    }
+
+    // -------------------- LIRE LES COMMANDES --------------------
+    public List<Order> getOrdersByUser(Long userId) {
+        // Récupérer toutes les commandes d'un utilisateur
+        return orderRepository.findByUserId(userId);
+    }
+
+    public Order getOrderById(Long orderId) {
+        // Récupérer une commande par son ID
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+    }
+
+    // -------------------- SUPPRIMER UNE COMMANDE --------------------
+    public void deleteOrder(Long orderId) {
+        // Supprimer une commande si elle existe
+        if (!orderRepository.existsById(orderId)) {
+            throw new IllegalArgumentException("Order not found");
+        }
+        orderRepository.deleteById(orderId);
+        log.info("Order {} deleted successfully", orderId);
+    }
+}

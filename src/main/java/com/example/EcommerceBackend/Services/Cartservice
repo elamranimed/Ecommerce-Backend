@@ -1,0 +1,97 @@
+package com.example.EcommerceBackend.Services;
+
+import com.example.EcommerceBackend.Entities.Cart;
+import com.example.EcommerceBackend.Entities.CartItem;
+import com.example.EcommerceBackend.Repositories.CartRepository;
+import com.example.EcommerceBackend.Repositories.CartItemRepository;
+import com.example.EcommerceBackend.Repositories.ProductRepository;
+
+import lombok.extern.slf4j.Slf4j;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@Slf4j
+@AllArgsConstructor
+public class CartService {
+
+    private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
+    private final ProductRepository productRepository;
+
+    // -------------------- AJOUTER UN PRODUIT AU PANIER --------------------
+    public Cart addProductToCart(Long userId, Long productId, int quantity) {
+        // Récupérer ou créer le panier de l'utilisateur
+        Cart cart = cartRepository.findByUserId(userId).orElse(new Cart(userId));
+
+        // Vérifier que le produit existe
+        productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("Product not found"));
+
+        // Ajouter l'article au panier
+        CartItem item = new CartItem(cart.getId(), productId, quantity);
+        cartItemRepository.save(item);
+
+        // Mettre à jour le prix total
+        cart.updateTotalPrice();
+        return cartRepository.save(cart);
+    }
+
+    // -------------------- SUPPRIMER UN PRODUIT DU PANIER --------------------
+    public Cart removeProductFromCart(Long userId, Long productId) {
+        // Récupérer le panier de l'utilisateur
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
+
+        // Supprimer l'article du panier
+        cartItemRepository.deleteByCartIdAndProductId(cart.getId(), productId);
+
+        // Mettre à jour le prix total
+        cart.updateTotalPrice();
+        return cartRepository.save(cart);
+    }
+
+    // -------------------- MODIFIER LA QUANTITÉ D'UN PRODUIT --------------------
+    public Cart updateCartItem(Long userId, Long productId, int newQuantity) {
+        // Récupérer le panier de l'utilisateur
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
+
+        // Récupérer l'article du panier
+        CartItem item = cartItemRepository.findByCartIdAndProductId(cart.getId(), productId)
+                .orElseThrow(() -> new IllegalArgumentException("Product not found in cart"));
+
+        // Mettre à jour la quantité
+        item.setQuantity(newQuantity);
+        cartItemRepository.save(item);
+
+        // Mettre à jour le prix total
+        cart.updateTotalPrice();
+        return cartRepository.save(cart);
+    }
+
+    // -------------------- OBTENIR LES ARTICLES DU PANIER --------------------
+    public List<CartItem> getCartItems(Long userId) {
+        // Récupérer tous les articles du panier d'un utilisateur
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
+        return cartItemRepository.findByCartId(cart.getId());
+    }
+
+    // -------------------- VIDER LE PANIER --------------------
+    public Cart clearCart(Long userId) {
+        // Récupérer le panier de l'utilisateur
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
+
+        // Supprimer tous les articles
+        List<CartItem> items = cartItemRepository.findByCartId(cart.getId());
+        cartItemRepository.deleteAll(items);
+
+        // Réinitialiser le panier
+        cart.clear();
+        return cartRepository.save(cart);
+    }
+}

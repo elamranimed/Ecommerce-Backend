@@ -1,0 +1,65 @@
+package com.example.EcommerceBackend.Services;
+
+import com.example.EcommerceBackend.Entities.Review;
+import com.example.EcommerceBackend.Repositories.ReviewRepository;
+
+import lombok.extern.slf4j.Slf4j;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@Slf4j
+@AllArgsConstructor
+public class ReviewService {
+
+    private final ReviewRepository reviewRepository;
+
+    // -------------------- CRÉER UN AVIS --------------------
+    public Review writeReview(Long userId, Long productId, String comment, int star) {
+        // Vérifier que la note est entre 1 et 5
+        if (star < 1 || star > 5) {
+            throw new IllegalArgumentException("Star rating must be between 1 and 5");
+        }
+
+        // Créer et sauvegarder un nouvel avis
+        Review review = new Review(userId, productId, star, comment);
+        return reviewRepository.save(review);
+    }
+
+    // -------------------- LIRE LES AVIS --------------------
+    public List<Review> getReviewsByProduct(Long productId) {
+        // Récupérer tous les avis pour un produit
+        return reviewRepository.findByProductId(productId);
+    }
+
+    public List<Review> getReviewsByUser(Long userId) {
+        // Récupérer tous les avis d'un utilisateur
+        return reviewRepository.findByUserId(userId);
+    }
+
+    // -------------------- METTRE À JOUR UN AVIS --------------------
+    public Review updateReview(Long reviewId, String newComment, int newStar) {
+        // Vérifier que la note est entre 1 et 5
+        if (newStar < 1 || newStar > 5) {
+            throw new IllegalArgumentException("Star rating must be between 1 and 5");
+        }
+
+        // Mettre à jour le contenu de l'avis
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("Review not found"));
+        review.setComment(newComment);
+        review.setStar(newStar);
+        return reviewRepository.save(review);
+    }
+
+    // -------------------- SUPPRIMER UN AVIS --------------------
+    public void deleteReview(Long reviewId) {
+        // Supprimer un avis si il existe
+        if (!reviewRepository.existsById(reviewId)) {
+            throw new IllegalArgumentException("Review not found");
+        }
+        reviewRepository.deleteById(reviewId);
+    }
+}

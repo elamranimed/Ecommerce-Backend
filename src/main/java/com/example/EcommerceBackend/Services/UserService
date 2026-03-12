@@ -1,3 +1,117 @@
 package come.example.EcommerceBackend.Services;
 
-import come.example.EcommerceBackend.Models.User;
+import come.example.EcommerceBackend.Entities.User;
+import come.example.EcommerceBackend.Entities.Cart;
+import come.example.EcommerceBackend.Entities.CartItem;
+import come.example.EcommerceBackend.Entities.Order;
+import come.example.EcommerceBackend.Entities.OrderItem;
+import come.example.EcommerceBackend.Entities.Review;
+import come.example.EcommerceBackend.Enums.Role;
+import come.example.EcommerceBackend.Repositories.UserRepository;
+import come.example.EcommerceBackend.Repositories.CartRepository;
+import come.example.EcommerceBackend.Repositories.CartItemRepository;
+import come.example.EcommerceBackend.Repositories.OrderRepository;
+import come.example.EcommerceBackend.Repositories.OrderItemRepository;
+import come.example.EcommerceBackend.Repositories.ReviewRepository;
+
+import lombok.extern.slf4j.Slf4j;
+import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+@Slf4j
+@AllArgsConstructor
+public class UserService {
+
+    private final UserRepository userRepository;
+    private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
+    private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final ReviewRepository reviewRepository;
+
+    // -------------------- AUTH --------------------
+
+    // Sign up
+    public User registerUser(User user) {
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Email déjà utilisé !");
+        }
+        user.setRole(Role.CUSTOMER);
+        return userRepository.save(user);
+    }
+
+    // Sign in
+    public Optional<User> login(String email, String password) {
+        return userRepository.findByEmailAndPassword(email, password);
+    }
+
+    // -------------------- CART --------------------
+
+    // Add product to cart
+    public Cart addProductToCart(Long userId, Long productId, int quantity) {
+        Cart cart = cartRepository.findByUserId(userId).orElse(new Cart(userId));
+        CartItem item = new CartItem(cart.getId(), productId, quantity);
+        cartItemRepository.save(item);
+        cart.updateTotalPrice();
+        return cartRepository.save(cart);
+    }
+
+    // Remove product from cart
+    public Cart removeProductFromCart(Long userId, Long productId) {
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Panier introuvable"));
+        cartItemRepository.deleteByCartIdAndProductId(cart.getId(), productId);
+        cart.updateTotalPrice();
+        return cartRepository.save(cart);
+    }
+
+    // Edit cart (ex: changer quantité)
+    public Cart updateCartItem(Long userId, Long productId, int newQuantity) {
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Panier introuvable"));
+        CartItem item = cartItemRepository.findByCartIdAndProductId(cart.getId(), productId)
+                .orElseThrow(() -> new IllegalArgumentException("Produit introuvable dans le panier"));
+        item.setQuantity(newQuantity);
+        cartItemRepository.save(item);
+        cart.updateTotalPrice();
+        return cartRepository.save(cart);
+    }
+
+    // -------------------- ORDER --------------------
+
+    // Place order
+    public Order placeOrder(Long userId) {
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Panier introuvable"));
+
+        Order order = new Order(userId);
+        orderRepository.save(order);
+
+        List<CartItem> items = cartItemRepository.findByCartId(cart.getId());
+        for (CartItem item : items) {
+            OrderItem orderItem = new OrderItem(order.getId(), item.getProductId(), item.getQuantity(), item.getProduct().getPrice());
+            orderItemRepository.save(orderItem);
+        }
+
+        cartItemRepository.deleteAll(items);
+        cart.clear();
+        cartRepository.save(cart);
+
+        return order;
+    }
+
+    // -------------------- REVIEW --------------------
+
+    // Write review
+    public Review writeReview(Long userId, Long productId, String comment, int star) {
+        if (star < 1 || star > 5) {
+            throw new IllegalArgumentException("La note doit être entre 1 et 5");
+        }
+        Review review = new Review(userId, productId, star, comment);
+        return reviewRepository.save(review);
+    }
+}
