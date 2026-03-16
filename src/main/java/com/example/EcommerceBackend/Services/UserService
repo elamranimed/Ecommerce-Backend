@@ -35,23 +35,23 @@ public class UserService {
 
     // -------------------- AUTH --------------------
 
-    // Sign up
+    // Inscription utilisateur
     public User registerUser(User user) {
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Email déjà utilisé !");
+            throw new IllegalArgumentException("Email already used!");
         }
         user.setRole(Role.CUSTOMER);
         return userRepository.save(user);
     }
 
-    // Sign in
+    // Connexion utilisateur
     public Optional<User> login(String email, String password) {
         return userRepository.findByEmailAndPassword(email, password);
     }
 
     // -------------------- CART --------------------
 
-    // Add product to cart
+    // Ajouter un produit au panier
     public Cart addProductToCart(Long userId, Long productId, int quantity) {
         Cart cart = cartRepository.findByUserId(userId).orElse(new Cart(userId));
         CartItem item = new CartItem(cart.getId(), productId, quantity);
@@ -60,21 +60,21 @@ public class UserService {
         return cartRepository.save(cart);
     }
 
-    // Remove product from cart
+    // Supprimer un produit du panier
     public Cart removeProductFromCart(Long userId, Long productId) {
         Cart cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Panier introuvable"));
+                .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
         cartItemRepository.deleteByCartIdAndProductId(cart.getId(), productId);
         cart.updateTotalPrice();
         return cartRepository.save(cart);
     }
 
-    // Edit cart (ex: changer quantité)
+    // Modifier la quantité d'un produit dans le panier
     public Cart updateCartItem(Long userId, Long productId, int newQuantity) {
         Cart cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Panier introuvable"));
+                .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
         CartItem item = cartItemRepository.findByCartIdAndProductId(cart.getId(), productId)
-                .orElseThrow(() -> new IllegalArgumentException("Produit introuvable dans le panier"));
+                .orElseThrow(() -> new IllegalArgumentException("Product not found in cart"));
         item.setQuantity(newQuantity);
         cartItemRepository.save(item);
         cart.updateTotalPrice();
@@ -83,10 +83,10 @@ public class UserService {
 
     // -------------------- ORDER --------------------
 
-    // Place order
+    // Passer une commande
     public Order placeOrder(Long userId) {
         Cart cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Panier introuvable"));
+                .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
 
         Order order = new Order(userId);
         orderRepository.save(order);
@@ -106,10 +106,10 @@ public class UserService {
 
     // -------------------- REVIEW --------------------
 
-    // Write review
+    // Écrire un avis
     public Review writeReview(Long userId, Long productId, String comment, int star) {
         if (star < 1 || star > 5) {
-            throw new IllegalArgumentException("La note doit être entre 1 et 5");
+            throw new IllegalArgumentException("Star rating must be between 1 and 5");
         }
         Review review = new Review(userId, productId, star, comment);
         return reviewRepository.save(review);
