@@ -1,7 +1,7 @@
 package com.example.EcommerceBackend.Services;
 
 import com.example.EcommerceBackend.Entities.OrderItem;
-import com.example.EcommerceBackend.Repositories.OrderItemRepository;
+import com.example.EcommerceBackend.Repositories.OrderItemRepo;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.AllArgsConstructor;
@@ -14,33 +14,33 @@ import java.util.List;
 @AllArgsConstructor
 public class OrderItemService {
 
-    private final OrderItemRepository orderItemRepository;
+    private final OrderItemRepo orderItemRepo;
 
     // -------------------- AJOUTER UN ARTICLE À LA COMMANDE --------------------
     public OrderItem addOrderItem(OrderItem orderItem) {
         // Sauvegarder un nouvel article dans une commande
-        return orderItemRepository.save(orderItem);
+        return orderItemRepo.save(orderItem);
     }
 
     // -------------------- OBTENIR LES ARTICLES D'UNE COMMANDE --------------------
     public List<OrderItem> getOrderItemsByOrder(Long orderId) {
         // Récupérer tous les articles d'une commande
-        return orderItemRepository.findByOrderId(orderId);
+        return orderItemRepo.findByOrderId(orderId);
     }
 
     // -------------------- METTRE À JOUR UN ARTICLE --------------------
     public OrderItem updateOrderItem(Long orderId, Long productId, int newQuantity, int newPrice) {
         // Mettre à jour la quantité et le prix d'un article dans une commande
-        OrderItem item = orderItemRepository.findByOrderIdAndProductId(orderId, productId)
+        OrderItem item = orderItemRepo.findByOrderIdAndProductId(orderId, productId)
                 .orElseThrow(() -> new IllegalArgumentException("Order item not found"));
         item.setQuantity(newQuantity);
         item.setPrice(newPrice);
-        return orderItemRepository.save(item);
+        return orderItemRepo.save(item);
     }
 
     // -------------------- SUPPRIMER UN ARTICLE --------------------
     public void removeOrderItem(Long orderId, Long productId) {
         // Supprimer un article spécifique d'une commande
-        orderItemRepository.deleteByOrderIdAndProductId(orderId, productId);
+        orderItemRepo.deleteByOrderIdAndProductId(orderId, productId);
     }
 }

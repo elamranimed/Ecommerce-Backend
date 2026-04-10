@@ -12,7 +12,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/cart-items")
 @AllArgsConstructor
-public class CartItemController {
+public class CartItemController { // Changé Cart_itemController en CartItemController pour correspondre au code interne
 
     private final CartItemService cartItemService;
 

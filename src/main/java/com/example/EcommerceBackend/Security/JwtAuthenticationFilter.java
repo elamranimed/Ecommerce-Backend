@@ -1,4 +1,4 @@
-package com.example.GestionDesDemandesCHU.Security;
+package com.example.EcommerceBackend.Security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

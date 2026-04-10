@@ -10,7 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
@@ -31,15 +30,21 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<User> login(@RequestBody LoginRequest loginRequest) {
-        Optional<User> user = userService.login(loginRequest.getEmail(), loginRequest.getPassword());
-        return user.map(ResponseEntity::ok).orElse(ResponseEntity.badRequest().build());
+        // Ici on garde .map() car userService.login retourne un Optional
+        return userService.login(loginRequest.getEmail(), loginRequest.getPassword())
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.badRequest().build());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        return userService.getUserById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        // Correction : On récupère l'objet directement
+        User user = userService.getUserById(id);
+        if (user != null) {
+            return ResponseEntity.ok(user);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @PutMapping("/{id}")
@@ -70,9 +75,13 @@ public class UserController {
 
     @GetMapping("/{id}/cart")
     public ResponseEntity<Cart> getUserCart(@PathVariable Long id) {
-        return userService.getUserCart(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        // Correction : On récupère l'objet directement
+        Cart cart = userService.getUserCart(id);
+        if (cart != null) {
+            return ResponseEntity.ok(cart);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     // DTO for login
@@ -80,7 +89,6 @@ public class UserController {
         private String email;
         private String password;
 
-        // getters and setters
         public String getEmail() { return email; }
         public void setEmail(String email) { this.email = email; }
         public String getPassword() { return password; }

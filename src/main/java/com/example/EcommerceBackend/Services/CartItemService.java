@@ -1,7 +1,7 @@
 package com.example.EcommerceBackend.Services;
 
 import com.example.EcommerceBackend.Entities.CartItem;
-import com.example.EcommerceBackend.Repositories.CartItemRepository;
+import com.example.EcommerceBackend.Repositories.CartItemRepo;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.AllArgsConstructor;
@@ -14,39 +14,39 @@ import java.util.List;
 @AllArgsConstructor
 public class CartItemService {
 
-    private final CartItemRepository cartItemRepository;
+    private final CartItemRepo cartItemRepo;
 
     // -------------------- AJOUTER UN ARTICLE AU PANIER --------------------
     public CartItem addCartItem(CartItem cartItem) {
         // Sauvegarder un nouvel article dans le panier
-        return cartItemRepository.save(cartItem);
+        return cartItemRepo.save(cartItem);
     }
 
     // -------------------- OBTENIR LES ARTICLES D'UN PANIER --------------------
     public List<CartItem> getCartItemsByCart(Long cartId) {
         // Récupérer tous les articles d'un panier
-        return cartItemRepository.findByCartId(cartId);
+        return cartItemRepo.findByCartId(cartId);
     }
 
     // -------------------- METTRE À JOUR UN ARTICLE --------------------
     public CartItem updateCartItem(Long cartId, Long productId, int newQuantity) {
         // Mettre à jour la quantité d'un article dans le panier
-        CartItem item = cartItemRepository.findByCartIdAndProductId(cartId, productId)
+        CartItem item = cartItemRepo.findByCartIdAndProductId(cartId, productId)
                 .orElseThrow(() -> new IllegalArgumentException("Cart item not found"));
         item.setQuantity(newQuantity);
-        return cartItemRepository.save(item);
+        return cartItemRepo.save(item);
     }
 
     // -------------------- SUPPRIMER UN ARTICLE --------------------
     public void removeCartItem(Long cartId, Long productId) {
         // Supprimer un article spécifique du panier
-        cartItemRepository.deleteByCartIdAndProductId(cartId, productId);
+        cartItemRepo.deleteByCartIdAndProductId(cartId, productId);
     }
 
     // -------------------- SUPPRIMER TOUS LES ARTICLES --------------------
     public void clearCartItems(Long cartId) {
         // Supprimer tous les articles d'un panier
-        List<CartItem> items = cartItemRepository.findByCartId(cartId);
-        cartItemRepository.deleteAll(items);
+        List<CartItem> items = cartItemRepo.findByCartId(cartId);
+        cartItemRepo.deleteAll(items);
     }
 }

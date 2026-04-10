@@ -2,13 +2,11 @@ package com.example.EcommerceBackend.Entities;
 
 import com.example.EcommerceBackend.Enums.Role;
 import jakarta.persistence.*;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import java.util.ArrayList;
 
 @Entity
@@ -21,7 +19,6 @@ import java.util.ArrayList;
         @UniqueConstraint(name = "users_email_key", columnNames = {"email"})
     }
 )
-
 public class User {
 
     @Id
@@ -44,9 +41,7 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
-    
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<Order> orders = new ArrayList<>();
-
-    }
+}

@@ -1,4 +1,4 @@
-package com.example.GestionDesDemandesCHU.Security;
+package com.example.EcommerceBackend.Security;
 
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;

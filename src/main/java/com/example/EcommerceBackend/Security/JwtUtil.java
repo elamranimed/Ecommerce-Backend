@@ -1,6 +1,6 @@
-package com.example.GestionDesDemandesCHU.Security;
+package com.example.EcommerceBackend.Security;
 
-import com.example.GestionDesDemandesCHU.Entities.Utilisateur;
+import com.example.EcommerceBackend.Entities.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -18,23 +18,22 @@ public class JwtUtil {
     @Value("${jwt.secret:VotreClefSecreteTresLongueEtSecuriseePourJWTTokenGeneration}")
     private String secret;
     
-    @Value("${jwt.expiration:86400000}") // 24 heures par défaut
+    @Value("${jwt.expiration:86400000}")
     private Long expiration;
     
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
     
-    public String generateToken(Utilisateur user) {
+    public String generateToken(User user) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("id", user.getIdUser());
+        claims.put("id", user.getId());
         claims.put("role", user.getRole().toString());
-        claims.put("nom", user.getNom());
-        claims.put("prenom", user.getPrenom());
+        claims.put("username", user.getUsername()); 
         
         return Jwts.builder()
                 .setClaims(claims)
-                .setSubject(user.getLogin())
+                .setSubject(user.getEmail())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey())
@@ -45,16 +44,12 @@ public class JwtUtil {
         return extractClaims(token).getSubject();
     }
     
-    public Integer extractUserId(String token) {
+    public Long extractUserId(String token) {
         Object idObj = extractClaims(token).get("id");
         if (idObj == null) return null;
-        if (idObj instanceof Integer) return (Integer) idObj;
-        if (idObj instanceof Long) return ((Long) idObj).intValue();
-        try {
-            return Integer.parseInt(idObj.toString());
-        } catch (NumberFormatException e) {
-            return null;
-        }
+        if (idObj instanceof Integer) return ((Integer) idObj).longValue();
+        if (idObj instanceof Long) return (Long) idObj;
+        return Long.parseLong(idObj.toString());
     }
     
     public String extractRole(String token) {
@@ -63,8 +58,7 @@ public class JwtUtil {
     }
     
     private Claims extractClaims(String token) {
-        // Utiliser API compatible avec la version de jjwt présente sur le classpath
-        return Jwts.parser()
+        return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
@@ -73,7 +67,7 @@ public class JwtUtil {
     
     public boolean validateToken(String token) {
         try {
-            extractClaims(token); // lancera une exception si invalide
+            extractClaims(token);
             return true;
         } catch (Exception e) {
             return false;
