@@ -31,7 +31,7 @@ public class Order {
     private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
+    @JsonManagedReference("order-items")
     @ToString.Exclude
     private List<OrderItem> orderItems = new ArrayList<>();
 }

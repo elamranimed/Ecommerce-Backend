@@ -4,6 +4,7 @@ import com.example.EcommerceBackend.Services.UserService;
 import com.example.EcommerceBackend.Entities.User;
 import com.example.EcommerceBackend.Entities.Cart;
 import com.example.EcommerceBackend.Entities.Order;
+import com.example.EcommerceBackend.Security.JwtUtil;
 
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final JwtUtil jwtUtil;
 
     @PostMapping("/register")
     public ResponseEntity<User> register(@RequestBody User user) {
@@ -29,16 +31,17 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<User> login(@RequestBody LoginRequest loginRequest) {
-        // Ici on garde .map() car userService.login retourne un Optional
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
         return userService.login(loginRequest.getEmail(), loginRequest.getPassword())
-                .map(ResponseEntity::ok)
+                .map(user -> {
+                    String token = jwtUtil.generateToken(user);
+                    return ResponseEntity.ok(new LoginResponse(token, user));
+                })
                 .orElse(ResponseEntity.badRequest().build());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        // Correction : On récupère l'objet directement
         User user = userService.getUserById(id);
         if (user != null) {
             return ResponseEntity.ok(user);
@@ -75,7 +78,6 @@ public class UserController {
 
     @GetMapping("/{id}/cart")
     public ResponseEntity<Cart> getUserCart(@PathVariable Long id) {
-        // Correction : On récupère l'objet directement
         Cart cart = userService.getUserCart(id);
         if (cart != null) {
             return ResponseEntity.ok(cart);
@@ -84,7 +86,7 @@ public class UserController {
         }
     }
 
-    // DTO for login
+    // DTO for login request
     public static class LoginRequest {
         private String email;
         private String password;
@@ -93,5 +95,21 @@ public class UserController {
         public void setEmail(String email) { this.email = email; }
         public String getPassword() { return password; }
         public void setPassword(String password) { this.password = password; }
+    }
+
+    // DTO for login response (token + user)
+    public static class LoginResponse {
+        private String token;
+        private User user;
+
+        public LoginResponse(String token, User user) {
+            this.token = token;
+            this.user = user;
+        }
+
+        public String getToken() { return token; }
+        public void setToken(String token) { this.token = token; }
+        public User getUser() { return user; }
+        public void setUser(User user) { this.user = user; }
     }
 }

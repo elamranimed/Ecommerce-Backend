@@ -31,6 +31,7 @@ public class Product {
     @Column(nullable = false)
     private String title;
 
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     @Column(nullable = false)
@@ -38,13 +39,14 @@ public class Product {
 
     private String category;
 
+    @Column(columnDefinition = "TEXT")
     private String thumbnail;
 
     @Column(nullable = false)
     private Integer stock = 0;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
+    @JsonManagedReference("product-order-items")
     @ToString.Exclude
     private List<OrderItem> orderItems = new ArrayList<>();
 }

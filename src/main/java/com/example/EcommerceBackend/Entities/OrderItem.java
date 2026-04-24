@@ -19,12 +19,12 @@ public class OrderItem {
 
     @ManyToOne
     @JoinColumn(name = "order_id", nullable = false)
-    @JsonBackReference
+    @JsonBackReference("order-items")
     private Order order;
 
     @ManyToOne
     @JoinColumn(name = "product_id", nullable = false)
-    @JsonBackReference
+    @JsonBackReference("product-order-items")
     private Product product;
 
     @Column(nullable = false)
