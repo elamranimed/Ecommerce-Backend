@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
 @Slf4j
@@ -29,6 +30,7 @@ public class UserService {
     private final CartItemRepo cartItemRepo;
     private final OrderRepo orderRepository;
     private final OrderItemRepo orderItemRepo;
+    private final PasswordEncoder passwordEncoder;
 
     // -------------------- AUTH --------------------
 
@@ -37,11 +39,20 @@ public class UserService {
             throw new IllegalArgumentException("Email already used!");
         }
         user.setRole(Role.CUSTOMER);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepository.save(user);
     }
 
     public Optional<User> login(String email, String password) {
-        return userRepository.findByEmailAndPassword(email, password);
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            // Fallback for existing plaintext passwords (for backwards compatibility while testing)
+            if (password.equals(user.getPassword()) || passwordEncoder.matches(password, user.getPassword())) {
+                return Optional.of(user);
+            }
+        }
+        return Optional.empty();
     }
 
     // -------------------- USER CRUD (Pour UserController) --------------------
