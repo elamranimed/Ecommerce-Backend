@@ -2,11 +2,12 @@ package com.example.EcommerceBackend.Services;
 
 import com.example.EcommerceBackend.Entities.Cart;
 import com.example.EcommerceBackend.Entities.CartItem;
+import com.example.EcommerceBackend.Entities.Product;
+import com.example.EcommerceBackend.Entities.User;
 import com.example.EcommerceBackend.Repositories.CartRepo;
 import com.example.EcommerceBackend.Repositories.CartItemRepo;
 import com.example.EcommerceBackend.Repositories.ProductRepo;
-
-import lombok.extern.slf4j.Slf4j;
+import com.example.EcommerceBackend.Repositories.UserRepo;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,33 +15,50 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
-@Slf4j
 @AllArgsConstructor
 public class CartService {
 
     private final CartRepo cartRepository;
-    private final CartItemRepo cartItemRepository;
+    private final CartItemRepo cartItemRepo;
     private final ProductRepo productRepository;
+    private final UserRepo userRepository;
+
+    // -------------------- GET OR CREATE CART --------------------
+    public Cart getOrCreateCart(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        return cartRepository.findByUserId(userId).orElseGet(() -> {
+            Cart newCart = new Cart();
+            newCart.setUser(user); // ✅ fix critique
+            return cartRepository.save(newCart);
+        });
+    }
 
     // -------------------- AJOUTER UN PRODUIT AU PANIER --------------------
+    @Transactional
     public Cart addProductToCart(Long userId, Long productId, int quantity) {
-        // Correction : Utilisation du constructeur de Cart(userId)
-        Cart cart = cartRepository.findByUserId(userId).orElseGet(() -> {
-            Cart newCart = new Cart();
-            // Si le setter est rouge, on enregistre et on gère l'ID
-            return cartRepository.save(newCart); 
-        });
+        Cart cart = getOrCreateCart(userId);
 
-        productRepository.findById(productId)
+        Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found"));
 
-        // Correction : On utilise le constructeur de CartItem pour éviter les setters
-        // Supposons un constructeur : new CartItem(cartId, productId, quantity)
-        CartItem item = new CartItem(); 
-        // Si ces lignes sont rouges, c'est que l'entité CartItem n'a pas ces champs exacts
-        cartItemRepository.save(item);
+        CartItem existingItem = cartItemRepo.findByCartIdAndProductId(cart.getId(), productId)
+                .orElse(null);
 
-        return cartRepository.save(cart);
+        if (existingItem != null) {
+            existingItem.setQuantity(existingItem.getQuantity() + quantity);
+            cartItemRepo.save(existingItem);
+        } else {
+            CartItem item = new CartItem();
+            item.setCart(cart);
+            item.setProduct(product);
+            item.setQuantity(quantity);
+            cartItemRepo.save(item);
+        }
+
+        return cartRepository.findById(cart.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
     }
 
     // -------------------- SUPPRIMER UN PRODUIT DU PANIER --------------------
@@ -49,30 +67,34 @@ public class CartService {
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
 
-        cartItemRepository.deleteByCartIdAndProductId(cart.getId(), productId);
+        cartItemRepo.deleteByCartIdAndProductId(cart.getId(), productId);
 
-        return cartRepository.save(cart);
+        return cartRepository.findById(cart.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
     }
 
-    // -------------------- MODIFIER LA QUANTITÉ D'UN PRODUIT --------------------
+    // -------------------- MODIFIER LA QUANTITÉ --------------------
+    @Transactional
     public Cart updateCartItem(Long userId, Long productId, int newQuantity) {
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
 
-        CartItem item = cartItemRepository.findByCartIdAndProductId(cart.getId(), productId)
+        CartItem item = cartItemRepo.findByCartIdAndProductId(cart.getId(), productId)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found in cart"));
 
         item.setQuantity(newQuantity);
-        cartItemRepository.save(item);
+        cartItemRepo.save(item);
 
-        return cartRepository.save(cart);
+        return cartRepository.findById(cart.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
     }
 
-    // -------------------- OBTENIR LES ARTICLES DU PANIER --------------------
+    // -------------------- OBTENIR LES ARTICLES --------------------
     public List<CartItem> getCartItems(Long userId) {
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
-        return cartItemRepository.findByCartId(cart.getId());
+
+        return cartItemRepo.findByCartId(cart.getId());
     }
 
     // -------------------- VIDER LE PANIER --------------------
@@ -81,9 +103,9 @@ public class CartService {
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
 
-        List<CartItem> items = cartItemRepository.findByCartId(cart.getId());
-        cartItemRepository.deleteAll(items);
+        cartItemRepo.deleteAll(cartItemRepo.findByCartId(cart.getId()));
 
-        return cartRepository.save(cart);
+        return cartRepository.findById(cart.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Cart not found"));
     }
 }
